@@ -320,7 +320,7 @@ func main() {
 	)
 	useLatestVersion := flag.Bool("latest", false, "Use the latest available version")
 	localControllerURL := flag.String("local-controller-url", "https://10.0.0.1", "The base URL of the local controller")
-	localControllerAPIKey := flag.String("local-controller-apikey", "", "A locally-scoped API key to get the local version")
+	localControllerAPIKey := flag.String("local-controller-apikey", os.Getenv("UNIFI_API_KEY"), "A locally-scoped API key to get the local version")
 
 	flag.Parse()
 
