@@ -12,7 +12,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -320,9 +319,13 @@ func main() {
 	)
 	useLatestVersion := flag.Bool("latest", false, "Use the latest available version")
 	localControllerURL := flag.String("local-controller-url", "https://10.0.0.1", "The base URL of the local controller")
-	localControllerAPIKey := flag.String("local-controller-apikey", os.Getenv("UNIFI_API_KEY"), "A locally-scoped API key to get the local version")
+	localControllerAPIKey := flag.String("local-controller-apikey", "", "A locally-scoped API key to get the local version")
 
 	flag.Parse()
+
+	if key := os.Getenv("UNIFI_API_KEY"); key != "" && *localControllerAPIKey == "" {
+		*localControllerAPIKey = key
+	}
 
 	specifiedVersion := flag.Arg(0)
 	if *localControllerAPIKey != "" {
@@ -360,16 +363,11 @@ func main() {
 		panic(err)
 	}
 
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("Unable to get the current filename")
-	}
+	assetsDir := filepath.Join(wd, *assetsDirFlag)
 
-	versionBaseDir := filepath.Dir(filename)
+	versionBaseDir := filepath.Join(assetsDir, "versions")
 
 	fieldsDir := filepath.Join(versionBaseDir, fmt.Sprintf("v%s", unifiVersion))
-
-	assetsDir := filepath.Join(wd, *assetsDirFlag)
 
 	fieldsInfo, err := os.Stat(fieldsDir)
 	if err != nil {
