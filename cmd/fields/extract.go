@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jghiloni/unifi-api/cmd/fields/custom"
 	"github.com/ulikunitz/xz"
 	"github.com/xor-gate/ar"
 )
@@ -201,22 +203,22 @@ func extractJSON(jarFile, fieldsDir string) error {
 }
 
 func copyCustom(fieldsDir string) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	// wd, err := os.Getwd()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	rootDir := findModuleRoot(wd)
-	srcDir := path.Join(rootDir, "cmd", "fields")
+	// rootDir := findModuleRoot(wd)
+	// srcDir := path.Join(rootDir, "cmd", "fields")
 
-	files, err := os.ReadDir(path.Join(srcDir, "custom"))
+	files, err := fs.ReadDir(custom.FS, ".")
 	if err != nil {
 		return fmt.Errorf("unable to read custom directory: %w", err)
 	}
 
 	for _, file := range files {
 		if !file.IsDir() {
-			fs, err := os.Open(path.Join(srcDir, "custom", file.Name()))
+			fs, err := custom.FS.Open(file.Name())
 			if err != nil {
 				return fmt.Errorf("unable to open file: %w", err)
 			}
