@@ -17,6 +17,15 @@ type oapiConfig struct {
 	Generation        oapiGeneration `yaml:"generation"`
 	OutputOptions     oapiOutputOpts `yaml:"output-options"`
 	NameSubstitutions oapiNameSubs   `yaml:"name-substitutions"`
+	TypeMapping       map[string]any `yaml:"type-mapping"`
+}
+
+type goTypeMapping struct {
+	Type string `yaml:"type"`
+}
+
+type stringMapping struct {
+	Formats map[string]goTypeMapping `yaml:"formats"`
 }
 
 type oapiGeneration struct {
@@ -115,6 +124,13 @@ func WriteOAPICodegenConfigs(resources []*ResourceInfo, configDir, specPath, cli
 					TypeNames:     typeNames,
 					PropertyNames: propertyNames,
 				},
+				TypeMapping: map[string]any{
+					"string": stringMapping{
+						Formats: map[string]goTypeMapping{
+							"uuid": { Type: "string" },
+						},
+					},
+				},
 			},
 		},
 		{
@@ -131,6 +147,13 @@ func WriteOAPICodegenConfigs(resources []*ResourceInfo, configDir, specPath, cli
 				NameSubstitutions: oapiNameSubs{
 					TypeNames:     typeNames,
 					PropertyNames: propertyNames,
+				},
+				TypeMapping: map[string]any{
+					"string": stringMapping{
+						Formats: map[string]goTypeMapping{
+							"uuid": { Type: "string" },
+						},
+					},
 				},
 			},
 		},

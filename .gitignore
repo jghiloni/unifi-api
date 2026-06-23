@@ -24,6 +24,8 @@ _site
 /pkg/
 /scripts
 assets/v*
+assets/*
+!assets/.gitkeep
 bin/
 dist/
 example.tf

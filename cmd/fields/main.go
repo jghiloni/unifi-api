@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -245,6 +247,48 @@ func NewFieldInfo(
 	}
 }
 
+func getLocalControllerVersion(baseURL string, apiKey string) (string, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+	u.Path = "/proxy/network/integration/v1/info"
+
+	ht := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("x-api-key", apiKey)
+
+	resp, err := ht.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s", resp.Status)
+	}
+
+	var v struct {
+		Version string `json:"applicationVersion"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
+		return "", err
+	}
+
+	return v.Version, nil
+}
+
 func cleanName(name string, reps []replacement) string {
 	for _, rep := range reps {
 		name = strings.ReplaceAll(name, rep.Old, rep.New)
@@ -275,18 +319,18 @@ func main() {
 		"Only download and build the fields JSON directory, do not generate",
 	)
 	useLatestVersion := flag.Bool("latest", false, "Use the latest available version")
+	localControllerURL := flag.String("local-controller-url", "https://10.0.0.1", "The base URL of the local controller")
+	localControllerAPIKey := flag.String("local-controller-apikey", "", "A locally-scoped API key to get the local version")
 
 	flag.Parse()
 
 	specifiedVersion := flag.Arg(0)
-	if specifiedVersion != "" && *useLatestVersion {
-		fmt.Print("error: cannot specify version with latest\n\n")
-		usage()
-		os.Exit(1)
-	} else if specifiedVersion == "" && !*useLatestVersion {
-		fmt.Print("error: must specify version or latest\n\n")
-		usage()
-		os.Exit(1)
+	if *localControllerAPIKey != "" {
+		var err error
+		if specifiedVersion, err = getLocalControllerVersion(*localControllerURL, *localControllerAPIKey); err != nil {
+			panic(err)
+		}
+		useLatestVersion = new(false)
 	}
 
 	var unifiVersion *version.Version
@@ -622,7 +666,7 @@ func main() {
 	// assets/oapi-codegen-exp/settings.yaml → clients/go/settings/settings.gen.go
 	// Consumed by the static //go:generate directives in the repo-root generate.go.
 	oapiConfigDir := filepath.Join(assetsDir, "oapi-codegen-exp")
-	clientsDir := filepath.Join(wd, "clients", "go")
+	clientsDir := filepath.Join(wd, "unifi")
 	if err := WriteOAPICodegenConfigs(resources, oapiConfigDir, openAPIFile, clientsDir); err != nil {
 		panic(err)
 	}

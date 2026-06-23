@@ -1,3 +1,5 @@
+//go:build tools
+
 // Package tools hosts the repo-root go:generate entrypoints. Three artifacts
 // are produced when you run `go generate ./...` from the repo root:
 //
